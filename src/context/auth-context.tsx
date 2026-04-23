@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
   });
 
-  const { data: profile, error } = useSWR("/profile", {
+  const { data: profile, error } = useSWR("/api/profile", {
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     fetcher: (url) =>
@@ -50,6 +50,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           allowedCameras: [],
           isLoading: false,
           isAuthenticated: true,
+        });
+      } else {
+        // No backend or mock API unavailable, fall back to anonymous mode
+        setAuth({
+          user: null,
+          allowedCameras: [],
+          isLoading: false,
+          isAuthenticated: false,
         });
       }
       return;
@@ -99,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading: false,
       isAuthenticated: true,
     });
-    axios.get("/logout", { withCredentials: true });
+    axios.get("/api/logout", { withCredentials: true }).catch(() => {});
   };
 
   return (

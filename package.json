@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "concurrently \"node mock-server.js\" \"vite --host\"",
+    "start": "vite --host",
     "dev": "vite --host",
     "build": "tsc && vite build --base=/BASE_PATH/",
     "lint": "eslint --ext .jsx,.js,.tsx,.ts --ignore-path .gitignore .",

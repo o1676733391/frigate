@@ -4,8 +4,13 @@ import { WsProvider } from "./ws";
 import axios from "axios";
 import { ReactNode } from "react";
 import { isRedirectingToLogin, setRedirectingToLogin } from "./auth-redirect";
+import { mockAxiosAdapter, NO_ENDPOINT_MODE } from "./mockApi";
 
 axios.defaults.baseURL = `${baseUrl}`;
+
+if (NO_ENDPOINT_MODE) {
+  axios.defaults.adapter = mockAxiosAdapter;
+}
 
 // Add request interceptor to prepend /api/ to relative paths
 axios.interceptors.request.use((config) => {

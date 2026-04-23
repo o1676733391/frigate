@@ -42,15 +42,15 @@ import { MdRecordVoiceOver } from "react-icons/md";
 import { PiBirdFill } from "react-icons/pi";
 
 export function getAttributeLabels(config?: FrigateConfig) {
-  if (!config) {
+  if (!config?.model?.attributes_map) {
     return [];
   }
 
   const labels = new Set();
 
-  Object.values(config.model.attributes_map).forEach((values) =>
-    values.forEach((label) => labels.add(label)),
-  );
+  Object.values(config.model.attributes_map).forEach((values) => {
+    values.forEach((label) => labels.add(label));
+  });
   return [...labels];
 }
 

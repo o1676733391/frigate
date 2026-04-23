@@ -16,6 +16,7 @@ import {
 import { FrigateStats } from "@/types/stats";
 import { createContainer } from "react-tracked";
 import useDeepMemo from "@/hooks/use-deep-memo";
+import { NO_ENDPOINT_MODE } from "./mockApi";
 
 type Update = {
   topic: string;
@@ -29,7 +30,281 @@ type WsState = {
 
 type useValueReturn = [WsState, (update: Update) => void];
 
-function useValue(): useValueReturn {
+const defaultEvent: FrigateEvent = {
+  type: "new",
+  before: {
+    id: "event-1",
+    camera: "front_door",
+    frame_time: Date.now() / 1000,
+    snapshot_time: Date.now() / 1000,
+    label: "person",
+    sub_label: null,
+    top_score: 0.95,
+    false_positive: false,
+    start_time: Date.now() / 1000 - 30,
+    end_time: null,
+    score: 0.95,
+    box: [0, 0, 100, 100],
+    area: 1,
+    ratio: 1,
+    region: [0, 0, 100, 100],
+    current_zones: [],
+    entered_zones: [],
+    thumbnail: null,
+    has_snapshot: true,
+    has_clip: true,
+    stationary: false,
+    motionless_count: 0,
+    position_changes: 1,
+    attributes: {},
+  },
+  after: {
+    id: "event-1",
+    camera: "front_door",
+    frame_time: Date.now() / 1000,
+    snapshot_time: Date.now() / 1000,
+    label: "person",
+    sub_label: null,
+    top_score: 0.95,
+    false_positive: false,
+    start_time: Date.now() / 1000 - 30,
+    end_time: null,
+    score: 0.95,
+    box: [0, 0, 100, 100],
+    area: 1,
+    ratio: 1,
+    region: [0, 0, 100, 100],
+    current_zones: [],
+    entered_zones: [],
+    thumbnail: null,
+    has_snapshot: true,
+    has_clip: true,
+    stationary: false,
+    motionless_count: 0,
+    position_changes: 1,
+    attributes: {},
+  },
+};
+
+const defaultReview: FrigateReview = {
+  type: "new",
+  before: {
+    id: "review-1",
+    camera: "front_door",
+    severity: "alert",
+    start_time: Date.now() / 1000 - 60,
+    end_time: Date.now() / 1000 - 20,
+    thumb_path: "/api/events/event-1/thumbnail.jpg",
+    has_been_reviewed: false,
+    data: {
+      audio: [],
+      detections: ["person"],
+      objects: ["person"],
+      significant_motion_areas: [],
+      zones: ["driveway"],
+    },
+  },
+  after: {
+    id: "review-1",
+    camera: "front_door",
+    severity: "alert",
+    start_time: Date.now() / 1000 - 60,
+    end_time: Date.now() / 1000 - 20,
+    thumb_path: "/api/events/event-1/thumbnail.jpg",
+    has_been_reviewed: false,
+    data: {
+      audio: [],
+      detections: ["person"],
+      objects: ["person"],
+      significant_motion_areas: [],
+      zones: ["driveway"],
+    },
+  },
+};
+
+const defaultStats: FrigateStats = {
+  cameras: {
+    front_door: {
+      audio_dBFPS: 0,
+      audio_rms: 0,
+      camera_fps: 25,
+      capture_pid: 3001,
+      detection_enabled: 1,
+      detection_fps: 8,
+      ffmpeg_pid: 4001,
+      pid: 5001,
+      process_fps: 5,
+      skipped_fps: 0,
+      connection_quality: "excellent",
+      expected_fps: 25,
+      reconnects_last_hour: 0,
+      stalls_last_hour: 0,
+    },
+  },
+  cpu_usages: {
+    "frigate.full_system": {
+      cmdline: "frigate",
+      cpu: "10.0",
+      cpu_average: "9.0",
+      mem: "512.0",
+    },
+  },
+  detectors: {
+    coral: {
+      detection_start: Date.now() / 1000 - 3600,
+      inference_speed: 28,
+      pid: 2451,
+    },
+  },
+  processes: { camera: { pid: 6000 } },
+  service: {
+    last_updated: Date.now() / 1000,
+    storage: {
+      "/media/frigate/recordings": {
+        free: 500000000,
+        total: 1000000000,
+        used: 500000000,
+        mount_type: "ext4",
+      },
+    },
+    uptime: 7200,
+    latest_version: "0.15.0-mock",
+    version: "0.15.0-mock",
+  },
+  camera_fps: 25,
+  process_fps: 5,
+  skipped_fps: 0,
+  detection_fps: 8,
+};
+
+const defaultCameraState: FrigateCameraState = {
+  config: {
+    enabled: false,
+    detect: false,
+    snapshots: false,
+    record: false,
+    audio: false,
+    audio_transcription: false,
+    notifications: true,
+    notifications_suspended: 0,
+    autotracking: false,
+    alerts: true,
+    detections: true,
+    object_descriptions: true,
+    review_descriptions: true,
+  },
+  motion: false,
+  objects: [],
+  audio_detections: [],
+};
+
+function safeParse<T>(payload: unknown, fallback: T): T {
+  if (typeof payload !== "string") {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(payload) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function getInitialMockState(): WsState {
+  return {
+    camera_activity: JSON.stringify({
+      front_door: {
+        config: {
+          enabled: false,
+          detect: false,
+          snapshots: false,
+          record: false,
+          audio: false,
+          audio_transcription: false,
+          notifications: true,
+          notifications_suspended: 0,
+          autotracking: false,
+          alerts: true,
+          detections: true,
+          object_descriptions: true,
+          review_descriptions: true,
+        },
+        motion: true,
+        objects: [
+          {
+            id: "event-1",
+            label: "person",
+            stationary: false,
+            area: 1,
+            ratio: 1,
+            score: 0.95,
+            sub_label: "",
+          },
+        ],
+        audio_detections: [],
+      },
+      backyard: {
+        config: {
+          enabled: false,
+          detect: false,
+          snapshots: false,
+          record: false,
+          audio: false,
+          audio_transcription: false,
+          notifications: true,
+          notifications_suspended: 0,
+          autotracking: false,
+          alerts: true,
+          detections: true,
+          object_descriptions: true,
+          review_descriptions: true,
+        },
+        motion: false,
+        objects: [],
+        audio_detections: [],
+      },
+    }),
+    events: JSON.stringify(defaultEvent),
+    reviews: JSON.stringify(defaultReview),
+    stats: JSON.stringify(defaultStats),
+    audio_detections: JSON.stringify({}),
+    model_state: JSON.stringify({}),
+    embeddings_reindex_progress: JSON.stringify({
+      thumbnails: 100,
+      descriptions: 100,
+      processed_objects: 0,
+      total_objects: 0,
+      time_remaining: 0,
+      status: "completed",
+    }),
+    birdseye_layout: JSON.stringify("last_output"),
+    triggers: JSON.stringify({
+      name: "",
+      camera: "",
+      event_id: "",
+      type: "",
+      score: 0,
+    }),
+    job_state: JSON.stringify({}),
+    audio_transcription_state: JSON.stringify("idle"),
+    tracked_object_update: JSON.stringify({ type: "", id: "", camera: "" }),
+  };
+}
+
+function useValueNoEndpoint(): useValueReturn {
+  const [wsState, setWsState] = useState<WsState>(getInitialMockState());
+
+  const setState = useCallback((message: Update) => {
+    setWsState((prev) => ({
+      ...prev,
+      [message.topic]: message.payload,
+    }));
+  }, []);
+
+  return [wsState, setState];
+}
+
+function useValueSocket(): useValueReturn {
   const wsUrl = `${baseUrl.replace(/^http/, "ws")}ws`;
 
   // main state
@@ -144,6 +419,8 @@ function useValue(): useValueReturn {
 
   return [wsState, setState];
 }
+
+const useValue = NO_ENDPOINT_MODE ? useValueNoEndpoint : useValueSocket;
 
 export const {
   Provider: WsProvider,
@@ -381,28 +658,28 @@ export function useFrigateEvents(): { payload: FrigateEvent } {
   const {
     value: { payload },
   } = useWs("events", "");
-  return { payload: JSON.parse(payload as string) };
+  return { payload: safeParse(payload, defaultEvent) };
 }
 
 export function useAudioDetections(): { payload: FrigateAudioDetections } {
   const {
     value: { payload },
   } = useWs("audio_detections", "");
-  return { payload: JSON.parse(payload as string) };
+  return { payload: safeParse(payload, {}) };
 }
 
 export function useFrigateReviews(): FrigateReview {
   const {
     value: { payload },
   } = useWs("reviews", "");
-  return useDeepMemo(JSON.parse(payload as string));
+  return useDeepMemo(safeParse(payload, defaultReview)) ?? defaultReview;
 }
 
 export function useFrigateStats(): FrigateStats {
   const {
     value: { payload },
   } = useWs("stats", "");
-  return useDeepMemo(JSON.parse(payload as string));
+  return useDeepMemo(safeParse(payload, defaultStats)) ?? defaultStats;
 }
 
 export function useInitialCameraState(
@@ -416,7 +693,7 @@ export function useInitialCameraState(
     send: sendCommand,
   } = useWs("camera_activity", "onConnect");
 
-  const data = useDeepMemo(JSON.parse(payload as string));
+  const data = useDeepMemo(safeParse(payload, {} as { [key: string]: FrigateCameraState }));
 
   useEffect(() => {
     let listener = undefined;
@@ -439,7 +716,7 @@ export function useInitialCameraState(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revalidateOnFocus]);
 
-  return { payload: data ? data[camera] : undefined };
+  return { payload: data ? data[camera] ?? defaultCameraState : defaultCameraState };
 }
 
 export function useModelState(

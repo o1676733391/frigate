@@ -230,7 +230,7 @@ export default function MasksAndZonesView({
 
   useEffect(() => {
     if (cameraConfig && containerRef.current && scaledWidth && scaledHeight) {
-      const zones = Object.entries(cameraConfig.zones).map(
+      const zones = Object.entries(cameraConfig.zones || {}).map(
         ([name, zoneData], index) => ({
           type: "zone" as PolygonType,
           typeIndex: index,
@@ -239,9 +239,9 @@ export default function MasksAndZonesView({
           friendly_name: zoneData.friendly_name,
           enabled: zoneData.enabled,
           enabled_in_config: zoneData.enabled_in_config,
-          objects: zoneData.objects,
+          objects: zoneData.objects || [],
           points: interpolatePoints(
-            parseCoordinates(zoneData.coordinates),
+            parseCoordinates(zoneData.coordinates || ""),
             1,
             1,
             scaledWidth,
@@ -308,7 +308,7 @@ export default function MasksAndZonesView({
 
       let objectMaskIndex = globalObjectMasks.length;
 
-      objectMasks = Object.entries(cameraConfig.objects.filters)
+      objectMasks = Object.entries(cameraConfig.objects.filters || {})
         .filter(
           ([, filterConfig]) =>
             filterConfig.mask && Object.keys(filterConfig.mask).length > 0,
