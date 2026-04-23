@@ -4,7 +4,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import monacoEditorPlugin from "vite-plugin-monaco-editor";
 
-const proxyHost = process.env.PROXY_HOST || "192.168.1.195:8971";
+const proxyHost = process.env.PROXY_HOST;
+const isMockMode = !proxyHost;
+const targetProto = isMockMode ? 'http' : 'https';
+const targetHost = proxyHost || 'localhost:4000';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -14,37 +17,31 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: `https://${proxyHost}`,
+        target: `${targetProto}://${targetHost}`,
         ws: true,
-        secure: false,
-        changeOrigin: true,
+        ...(isMockMode ? {} : { secure: false, changeOrigin: true }),
       },
       "/vod": {
-        target: `https://${proxyHost}`,
-        secure: false,
-        changeOrigin: true,
+        target: `${targetProto}://${targetHost}`,
+        ...(isMockMode ? {} : { secure: false, changeOrigin: true }),
       },
       "/clips": {
-        target: `https://${proxyHost}`,
-        secure: false,
-        changeOrigin: true,
+        target: `${targetProto}://${targetHost}`,
+        ...(isMockMode ? {} : { secure: false, changeOrigin: true }),
       },
       "/exports": {
-        target: `https://${proxyHost}`,
-        secure: false,
-        changeOrigin: true,
+        target: `${targetProto}://${targetHost}`,
+        ...(isMockMode ? {} : { secure: false, changeOrigin: true }),
       },
       "/ws": {
-        target: `wss://${proxyHost}`,
+        target: isMockMode ? `ws://${targetHost}` : `wss://${proxyHost}`,
         ws: true,
-        secure: false,
-        changeOrigin: true,
+        ...(isMockMode ? {} : { secure: false, changeOrigin: true }),
       },
       "/live": {
-        target: `wss://${proxyHost}`,
-        changeOrigin: true,
+        target: isMockMode ? `ws://${targetHost}` : `wss://${proxyHost}`,
         ws: true,
-        secure: false,
+        ...(isMockMode ? {} : { changeOrigin: true, secure: false }),
       },
     },
   },
