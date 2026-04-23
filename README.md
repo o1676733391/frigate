@@ -1,4 +1,6 @@
-This is the Frigate frontend which connects to and provides a User Interface to the Python backend.
+# frigate
+
+This is the Frigate frontend which connects to and provides a user interface to the Python backend.
 
 # Web Development
 
